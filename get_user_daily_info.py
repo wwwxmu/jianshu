@@ -111,6 +111,8 @@ def getUserInfo(uid):
     user_info['article_nums'] = dom.xpath('//div[@class="meta-block"]/a/p/text()')[2]
     user_info['word_nums'] = dom.xpath('//div[@class="meta-block"]/p/text()')[0]
     user_info['like_nums'] = dom.xpath('//div[@class="meta-block"]/p/text()')[1]
+    user_info['name'] = dom.xpath('//a[@class="name"]/text()')[0]
+    user_info['img'] = 'https:'+dom.xpath('//a[@class="avatar"]/img/@src')[0]
     return user_info
 
 def getFollowsInfo(user_info):
@@ -123,6 +125,7 @@ def getFollowsInfo(user_info):
     following_urls = ['https://www.jianshu.com/users/{}/followers?page={}'.format(uid, i) for i in
                           range(1, max_page+1)]
     for following_url in following_urls:
+        time.sleep(2)
         r = getResponse(following_url)
         dom = etree.HTML(r.text)
         items = dom.xpath('//ul/li//div[@class="info"]')
@@ -130,22 +133,24 @@ def getFollowsInfo(user_info):
             user = {}
             try:
                 user['uid'] = item.xpath('./a/@href')[0].split('/')[2]
-                user['following'] = item.xpath('./div/span[1]/text()')[0].replace('关注', '').strip()
-                user['follows'] = item.xpath('./div/span[2]/text()')[0].replace('粉丝', '').strip()
-                user['article_nums'] = item.xpath('./div/span[3]/text()')[0].replace('文章', '').strip()
+                user['img'] = 'https:'+item.xpath('../a/img/@src')[0] if item.xpath('../a/img/@src') else ''
+                user['following'] = item.xpath('./div/span[1]/text()')[0].replace(u'关注', '').strip()
+                user['follows'] = item.xpath('./div/span[2]/text()')[0].replace(u'粉丝', '').strip()
+                user['article_nums'] = item.xpath('./div/span[3]/text()')[0].replace(u'文章', '').strip()
                 s = item.xpath('./div[2]/text()')[0]
                 num = re.findall(r"\d+",s)
                 if len(num) == 2:
                     user['word_nums'] = num[0]
                     user['like_nums'] = num[1]
                 follows.append(user)
-            except ValueError:
-                pass
+            except ValueError as e:
+                print(e)
     return follows
 
 if __name__ == "__main__":
     uid = "67eb7ed414d3"
     date = time.strftime("%Y-%m-%d", time.localtime())
+    print(date)
     user_info = getUserInfo(uid)
     details = getArticleInfo(user_info)
     follows = getFollowsInfo(user_info)
